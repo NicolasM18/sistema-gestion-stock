@@ -6,7 +6,7 @@ Este proyecto es una aplicación web Full-Stack diseñada para la administració
 
 * **Backend:** Python, Django
 * **Frontend:** JavaScript, HTML, CSS, Bootstrap
-* **Base de Datos:** SQLite (o la que estés usando)
+* **Base de Datos:** SQLite
 
 --Funcionalidades Principales
 
