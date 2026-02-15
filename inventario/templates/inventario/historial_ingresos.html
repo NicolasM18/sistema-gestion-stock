@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de Ingresos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'inventario/style.css' %}">
+    <style>
+        .footer-totales {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background-color: #343a40; color: white;
+            padding: 15px 20px;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex; justify-content: space-around; align-items: center;
+        }
+        .main-hc { padding-bottom: 100px; }
+        .badge-prov { font-size: 0.9em; padding: 8px 12px; }
+        .text-small-date { font-size: 0.85em; color: #6c757d; }
+        .rentabilidad-tag { font-size: 0.9em; font-weight: bold; color: #198754; }
+        .rentabilidad-tag.low { color: #dc3545; } /* Rojo si es baja */
+    </style>
+</head>
+<body class="main-hc container-fluid px-4 mt-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="text-dark mb-0">🚛 Historial de Ingresos</h1>
+        <a href="{% url 'home' %}?modo=compra" class="btn btn-outline-secondary fw-bold">← Volver al Stock</a>
+    </div>
+
+    <div class="card bg-light border-0 shadow-sm mb-4">
+        <div class="card-body py-2">
+            <form method="get" class="row g-2 align-items-center">
+                
+                <div class="col-md-4">
+                    <label class="small text-muted fw-bold mb-1">Proveedor:</label>
+                    <select name="proveedor" class="form-select form-select-sm border-0 shadow-sm">
+                        <option value="">Todos los Proveedores</option>
+                        <option value="sin_proveedor" {% if proveedor_seleccionado == 'sin_proveedor' %}selected{% endif %}>-- Ajustes / Sin Prov --</option>
+                        {% for p in proveedores %}
+                            <option value="{{ p.id }}" {% if proveedor_seleccionado == p.id|stringformat:"s" %}selected{% endif %}>
+                                {{ p.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="small text-muted fw-bold mb-1">Desde:</label>
+                    <input type="datetime-local" name="fecha_inicio" class="form-control form-control-sm border-0 shadow-sm" value="{{ fecha_inicio }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="small text-muted fw-bold mb-1">Hasta:</label>
+                    <input type="datetime-local" name="fecha_fin" class="form-control form-control-sm border-0 shadow-sm" value="{{ fecha_fin }}">
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end gap-1">
+                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold mt-4">🔍 Filtrar</button>
+                    {% if proveedor_seleccionado or fecha_inicio or fecha_fin %}
+                        <a href="{% url 'historial_ingresos' %}" class="btn btn-sm btn-secondary mt-4" title="Limpiar Filtros">❌</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="tabla-scroll-hc" style="max-height: 73.5vh;">
+        <div class="accordion" id="accordionCompras">
+            {% for compra in compras %}
+            <div class="accordion-item shadow-sm mb-2 border-0">
+                <h2 class="accordion-header" id="headingC{{ compra.id }}">
+                    <button class="accordion-button collapsed bg-white text-dark border-bottom" type="button" data-bs-toggle="collapse" data-bs-target="#collapseC{{ compra.id }}">
+                        <div class="d-flex w-100 justify-content-between align-items-center me-3">
+                            <div>
+                                {% if compra.proveedor %}
+                                    <span class="badge bg-primary badge-prov me-2">🏭 {{ compra.proveedor.nombre|upper }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary badge-prov me-2">⚙️ AJUSTE</span>
+                                {% endif %}
+                                <span class="text-muted fw-bold small me-2">#{{ compra.id }}</span>
+                                <span class="text-secondary small fw-bold">📅 {{ compra.fecha|date:"d/m/Y H:i" }}hs</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-muted small d-block" style="font-size: 0.7em;">TOTAL</span>
+                                <span class="text-dark fw-bold fs-5">${{ compra.total|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapseC{{ compra.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionCompras">
+                    <div class="accordion-body p-0">
+                        <table class="table table-sm table-striped mb-0 text-center align-middle">
+                            <thead class="table-dark small">
+                                <tr>
+                                    <th class="text-start ps-3">Marca</th>
+                                    <th class="text-start">Producto</th>
+                                    <th>Costo Unit.</th>
+                                    <th>Rentabilidad</th>
+                                    <th>P. Venta (Actual)</th>
+                                    <th>Cantidad</th>
+                                    <th>Subtotal Costo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detalle in compra.detalles_compra.all %}
+                                <tr>
+                                    <td class="text-start ps-3 text-primary fw-bold small">
+                                        {{ detalle.producto.marca|default:"-" }}
+                                    </td>
+                                    <td class="text-start">
+                                        <strong>{{ detalle.producto.nombre }}</strong>
+                                        <small class="text-muted d-block" style="font-size: 0.75em;">{{ detalle.producto.categoria.nombre }}</small>
+                                    </td>
+                                    <td>${{ detalle.costo_unitario }}</td>
+                                    <td>
+                                        <span class="rentabilidad-calc" 
+                                              data-costo="{{ detalle.costo_unitario|stringformat:'.2f' }}" 
+                                              data-precio="{{ detalle.producto.precio|stringformat:'.2f' }}">
+                                            <small class="text-muted">...</small>
+                                        </span>
+                                    </td>
+                                    <td class="text-success fw-bold">${{ detalle.producto.precio }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            {{ detalle.cantidad }} {% if detalle.producto.es_por_peso %}kg{% else %}u{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold">${{ detalle.costo_total|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <div style="font-size: 3rem; opacity: 0.3;">📅</div>
+                <h4 class="text-muted mt-2">No hay ingresos en este rango de fechas.</h4>
+                <p class="text-small text-muted">Intenta ampliar el filtro.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="footer-totales">
+        <div class="d-flex align-items-center">
+            <span class="fs-2 me-2">📦</span>
+            <div class="lh-1">
+                <small class="text-light text-uppercase fw-bold" style="font-size: 0.7em;">Valor Stock (Costo)</small>
+                <div class="fs-4 fw-bold text-warning">${{ valor_stock_costo|floatformat:2 }}</div>
+            </div>
+        </div>
+        <div class="d-block border-end border-secondary mx-3" style="height: 40px;"></div>
+        <div class="d-flex align-items-center">
+            <div class="lh-1 text-end">
+                <small class="text-light text-uppercase fw-bold" style="font-size: 0.7em;">Valor Venta (Est.)</small>
+                <div class="fs-4 fw-bold text-success">${{ valor_stock_venta|floatformat:2 }}</div>
+            </div>
+            <span class="fs-2 ms-2">💰</span>
+        </div>
+        <div class="d-none d-lg-block border-end border-secondary mx-3" style="height: 40px;"></div>
+        <div class="d-none d-lg-block text-center lh-1">
+             <small class="text-light text-uppercase fw-bold" style="font-size: 0.7em;">Rentabilidad Potencial</small>
+             <div class="fs-5 fw-bold text-info">+${{ ganancia_potencial|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const spans = document.querySelectorAll('.rentabilidad-calc');
+            spans.forEach(span => {
+                const costo = parseFloat(span.dataset.costo.replace(',', '.'));
+                const precio = parseFloat(span.dataset.precio.replace(',', '.'));
+                if (costo > 0 && precio > 0) {
+                    const factor = (precio / costo).toFixed(2);
+                    const porcentaje = Math.round(((precio - costo) / costo) * 100);
+                    let colorClass = "text-success"; 
+                    if (factor < 1.1) colorClass = "text-danger"; 
+                    else if (factor < 1.3) colorClass = "text-warning"; 
+                    span.innerHTML = `<span class="${colorClass} fw-bold">x${factor}</span> <small class="text-muted">(${porcentaje}%)</small>`;
+                } else {
+                    span.innerHTML = '<span class="text-muted">-</span>';
+                }
+            });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,465 @@
+
+.main-v {
+    background-color: #eeeeee;
+}
+
+.main-hc {
+    background-color: #eeeeee;
+}
+
+.main-cc {
+    background-color: #eeeeee;
+}
+
+.main-c {
+    background-color: #eeeeee;
+}
+
+.main-cv {
+    background-color: #94b4ff;
+}
+
+.main-hv {
+    background-color: #eeeeee;
+}
+
+.main-np {
+    background-color: #eeeeee;
+}
+
+.main-del{
+    background-color: #800a0a;
+}
+
+.cont-npd{
+    background-color: #0eb321;
+}
+
+.mi-buscador {
+    width: 400px !important;
+    border-radius: 20px;   
+    border: 2px solid #6c757d;
+}
+
+.btn-nuevo {
+    background-color: #2ba322;
+    border-color: #27941f;
+    color: white;
+    font-weight: bold;
+    border-radius: 5px;     
+    padding: 10px 25px;      
+    transition: transform 0.2s; 
+}
+
+.btn-cambiar-venta {
+    text-decoration: none;
+    background-color: #234cd3;
+    border-color: #2147c2;
+    color: white;
+    font-weight: bold;
+    border-radius: 10px;     
+    padding: 10px 25px;    
+    transition: transform 0.2s;
+}
+
+.btn-cambiar-venta:hover {
+    background-color: #2146c1;
+    transform: scale(1.05);  
+    color: white;
+    border-color: #1d3a9d;
+}
+
+.btn-cambiar-compra {
+    text-decoration: none;
+    font-size: 15px;
+    background-color: #000000; 
+    border-color: #000000;
+    color: white;
+    font-weight: bold;
+    border-radius: 10px;      
+    padding: 10px 25px;       
+    transition: transform 0.2s; 
+}
+
+.btn-cambiar-compra:hover {
+    background-color: #000000;
+    transform: scale(1.05);   
+    color: white;
+    border-color: #000000;
+}
+
+.btn-venta {
+    background-color: #85bcff; 
+    color: white;
+    font-weight: bold;
+    border-radius: 10px;
+    border-color: #6aadff;     
+    padding: 10px 25px;       
+    transition: transform 0.2s; 
+}
+
+.btn-compra {
+    background-color: #e9bd2d; 
+    border-color: #e8b920;
+    color: white;
+    font-weight: bold;
+    border-radius: 10px;     
+    padding: 10px 25px;     
+    transition: transform 0.2s; 
+}
+
+.btn-ingreso {
+    background-color: #dcbf2b;
+    border-color: #caa429;
+    color: rgb(255, 255, 255);
+    font-weight: bold;
+    border-radius: 10px;      
+    padding: 10px 25px;    
+    transition: transform 0.2s; 
+}
+
+.btn-ingreso:hover {
+    background-color: #c5aa26;
+    transform: scale(1.05);    
+    color: white;
+    border-color: #b39224;
+}
+
+.btn-nuevo:hover {
+    background-color: #27901f;
+    transform: scale(1.05);   
+    color: white;
+    border-color: #247e1d;
+}
+
+.btn-venta:hover {
+    background-color: #79aae7;
+    transform: scale(1.05);   
+    color: white;
+    border-color: #5c99e3;
+}
+
+.btn-compra:hover {
+    background-color: #dcb22b;
+    border-color: #d0a61c;
+    transform: scale(1.05);  
+    color: white;
+}
+
+
+.botones-accion a {
+    margin-right: 30px; 
+}
+
+
+.table-title-v th{
+    background-color: #00165f !important;
+    color: white !important;
+    border-color: #001149;           
+}
+
+.table-title-c th{
+    background-color: #252525 !important;
+    color: white !important;
+    border-color: #181818;           
+}
+
+.btn-buscar{
+    background-color: rgb(137, 144, 157);
+    border-color: rgb(123, 129, 141);
+    color: white;
+}
+
+.btn-buscar:hover{
+    background-color: rgb(119, 124, 134);
+    border-color: rgb(89, 93, 100);
+}
+
+.btn-carrito{
+    display: flex;
+    justify-content: center;
+    background-color: #07c70a; 
+    border-color: rgb(1, 155, 6);
+    font-weight: bold;
+    border-radius: 50px;     
+    padding: 10px 25px;        
+    transition: transform 0.2s; 
+}
+
+.btn-carrito:hover {
+    background-color: #07b00a;
+    transform: scale(1.05);  
+    color: white;
+    border-color: rgb(2, 127, 6);
+}
+
+.btn-cont{
+    display: grid;
+    grid-template-columns: 100%;
+    grid-template-rows: 50% 50%;
+    gap: 200px;
+}
+
+.cont-bot{
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(5, 18%);
+    grid-template-rows: 100%;
+}
+.cont-bot a{
+    height: 65%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cont-cambio{
+    height: 100%;
+}
+
+.cont-bus{
+    display: grid;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.form-bus{
+    width: 100%;
+    height: 100%;
+}
+
+.btn-carr_vent a{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.tabla-scroll-lp {
+    margin: 5px;
+    max-height: 17vh; 
+    overflow-y: auto; 
+    border-radius: 5px; 
+}
+
+.tabla-scroll-lp thead th {
+    position: sticky;
+    top: 0;           
+    z-index: 10;      
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); 
+}
+
+.tabla-scroll-hv {
+    background-color: white;
+    padding: 10px;
+    max-height: 76vh;
+    overflow-y: auto; 
+    border-radius: 5px; 
+}
+
+
+.tabla-scroll-hv thead th {
+    position: sticky;
+    top: 0;           
+    z-index: 10;     
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); 
+}
+
+.tabla-scroll-hc {
+    background-color: white;
+    padding: 10px;
+    max-height: 80vh; 
+    overflow-y: auto;
+    border-radius: 5px; 
+}
+
+
+.tabla-scroll-hc thead th {
+    position: sticky; 
+    top: 0;           
+    z-index: 10;      
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); 
+}
+
+.tabla-scroll-cv {
+    background-color: white;
+    margin: 10px;
+    max-height: 70vh; 
+    overflow-y: auto;
+    border-radius: 5px; 
+}
+
+.tabla-scroll-cv thead th {
+    position: sticky; 
+    top: 0;          
+    z-index: 10;      
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); 
+}
+
+.tabla-scroll-cc {
+    margin: 10px;
+    background-color: white;
+    max-height: 70vh; 
+    overflow-y: auto; 
+    border-radius: 5px; 
+}
+
+
+.tabla-scroll-cc thead th {
+    position: sticky; 
+    top: 0;           
+    z-index: 10;     
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); 
+}
+
+.cont-foot{
+    display: flex;
+    height: 60px;
+}
+
+.btn-selec-v{
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #209400; 
+    border-color: #227c09;
+    font-weight: bold;
+    border-radius: 50px;       
+    padding: 10px 25px;       
+    transition: transform 0.2s; 
+}
+
+.btn-selec-v:hover {
+    background-color: #1c7f00;
+    transform: scale(1.05);   
+    color: white;
+    border-color: #1b6507;
+}
+
+.btn-selec-c{
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e59b1b;
+    border-color: #d3891a;
+    font-weight: bold;
+    border-radius: 50px;     
+    padding: 10px 25px;        
+    transition: transform 0.2s; 
+}
+
+.btn-selec-c:hover {
+    background-color: #be7e17;
+    transform: scale(1.05);    
+    color: white;
+    border-color: #9e6316;
+}
+
+
+
+
+.btn-vol-pn:hover{
+    background-color: #5c5c5c;
+}
+
+
+
+
+
+
+
+/*
+body {
+    background-color: #45006b;
+}
+
+.mi-buscador {
+    width: 400px !important;
+    border-radius: 20px;
+    border: 2px solid #6c757d;
+}
+
+.btn-nuevo {
+    background-color: #27d332;
+    color: white;
+    font-weight: bold;
+    border-radius: 50px;
+    padding: 10px 25px;
+    transition: transform 0.2s;
+}
+
+.btn-compra {
+    background-color: #42c14d;
+    color: white;
+    font-weight: bold;
+    border-radius: 50px;
+    border-color: rgb(0, 100, 8);
+    padding: 10px 25px;
+    transition: transform 0.2s;
+}
+
+.btn-venta {
+    background-color: #8347b7;
+    border-color: rgb(47, 0, 79);
+    color: white;
+    font-weight: bold;
+    border-radius: 50px;
+    padding: 10px 25px;
+    transition: transform 0.2s;
+}
+
+.btn-nuevo:hover {
+    background-color: #00f667;
+    transform: scale(1.05);
+    color: white;
+}
+
+.btn-compra:hover {
+    background-color: #3db647;
+    transform: scale(1.05);
+    color: white;
+    border-color: rgb(0, 100, 8);
+}
+
+.btn-venta:hover {
+    background-color: #7742a5;
+    border-color: rgb(49, 0, 93);
+    transform: scale(1.05);
+    color: white;
+}
+
+
+.botones-accion a {
+    margin-right: 30px;
+}
+
+.cont-bot{
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 50% 50%;
+}
+
+.table-title th {
+    background-color: #5d00a0 !important;
+    color: white !important;
+    border-color: #4b0082;           
+}
+
+.btn-buscar{
+    background-color: rgb(88, 11, 219);
+    border-color: rgb(60, 12, 142);
+    color: white;
+}
+
+.btn-buscar:hover{
+    background-color: rgb(59, 0, 161);
+    border-color: rgb(65, 13, 155);
+}
+*/

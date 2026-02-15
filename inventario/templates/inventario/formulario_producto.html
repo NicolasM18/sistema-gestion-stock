@@ -1,0 +1,362 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuevo Producto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'inventario/style.css' %}">
+</head>
+<body class="main-np container-fluid px-4 mt-5">
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8"> 
+            <div class="card shadow">
+                <div class="cont-npd card-header text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Agregar Nuevo Producto</h4>
+                    <a href="{% url 'home' %}?modo={{ modo }}" class="btn btn-outline-light btn-sm fw-bold">
+                        ← Volver
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="form-producto">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Código de Barras:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">📟</span>
+                                {{ form.codigo_barras }}
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-2">
+                                <h6 class="text-primary fw-bold mb-0">1. Clasificación del Producto</h6>
+                                
+                                <div class="form-check form-switch mb-0 me-5">
+                                    {{ form.es_por_peso }}
+                                    <label class="form-check-label fw-bold text-dark small ms-4" for="{{ form.es_por_peso.id_for_label }}" style="cursor: pointer;">
+                                        ⚖️ Venta por Peso
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label small fw-bold">Tipo:</label>
+                                        {{ form.tipo_producto }}
+                                        <div id="div_nuevo_tipo" class="mt-2" style="display: none;">{{ form.nuevo_tipo }}</div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label small fw-bold">Categoría:</label>
+                                        {{ form.categoria }}
+                                        <div id="div_nueva_categoria" class="mt-2" style="display: none;">{{ form.nueva_categoria }}</div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label small fw-bold">Subcategoría:</label>
+                                        {{ form.subcategoria }}
+                                        <div id="div_nueva_subcategoria" class="mt-2" style="display: none;">{{ form.nueva_subcategoria }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-header bg-transparent border-bottom py-2">
+                                <h6 class="text-primary fw-bold mb-0">2. Detalles del Producto</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label fw-bold">Marca:</label>
+                                        {{ form.marca }}
+                                    </div>
+
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label fw-bold">Nombre del Producto:</label>
+                                        {{ form.nombre }}
+                                    </div>
+                                    
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label fw-bold">Contenido / Peso:</label>
+                                        {{ form.contenido_neto }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-primary" id="label_costo">Precio Costo:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.precio_costo }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-success fw-bold" id="label_venta">Precio Venta:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.precio }} 
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4 align-items-center"> <div class="col-md-4">
+                                <label class="form-label text-muted small">Stock Actual (Sistema):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">📦</span>
+                                    {{ form.stock_actual }} 
+                                </div>
+                                <div class="form-text small">Lo que figura actualmente.</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label text-muted small">Stock Mínimo (Alerta):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">🔔</span>
+                                    {{ form.stock_minimo }}
+                                </div>
+                                <div class="form-text small">Punto de reposición.</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label text-success fw-bold">➕ Sumar Stock (Corrección):</label>
+                                <div class="input-group shadow-sm">
+                                    {{ form.cantidad_a_agregar }}
+                                </div>
+                                <div class="form-text text-success small">Ingresa la cantidad física.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="text-muted small fw-bold mb-1">Vista Previa (Cómo se verá en la lista):</label>
+                            <div class="border rounded p-2 bg-white">
+                                <table class="table table-sm table-striped mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Marca</th>
+                                            <th>Producto</th>
+                                            <th>Precio Venta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-primary fw-bold" id="preview-marca">-</td>
+                                            <td>
+                                                <strong id="preview-nombre">-</strong>
+                                                <span class="text-muted small" id="preview-contenido"></span>
+                                            </td>
+                                            <td class="fw-bold text-success">
+                                                $<span id="preview-precio">0.0</span>
+                                                <small class="text-muted" id="preview-unidad">/u</small>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalConfirmarGuardar">
+                                Guardar Producto
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalConfirmarCancelar">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalConfirmarGuardar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">💾 Guardar Producto</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3" style="font-size: 3rem;">📦</div>
+                    <h5 class="mb-2">¿Confirmar registro del producto?</h5>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" form="form-producto" class="btn btn-success px-4">✅ Sí, Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalConfirmarCancelar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title fw-bold">⚠️ Cancelar Registro</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <h5 class="mb-2">¿Seguro que quieres salir?</h5>
+                    <p class="text-muted small">Perderás los datos ingresados.</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Seguir editando</button>
+                    <a href="{% url 'home' %}?modo={{ modo }}" class="btn btn-danger px-4">🗑️ Sí, salir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // REFERENCIAS DOM
+            const switchPeso = document.getElementById('id_es_por_peso');
+            // Inputs numéricos
+            const inputStock = document.getElementById('id_stock_actual');
+            const inputMin = document.getElementById('id_stock_minimo');
+            const inputAgregar = document.getElementById('id_cantidad_a_agregar');
+            // Labels
+            const labelCosto = document.getElementById('label_costo');
+            const labelVenta = document.getElementById('label_venta');
+            const labelStock = document.getElementById('label_stock');
+            const previewUnidad = document.getElementById('preview-unidad');
+            // BLOQUEAR TECLAS DECIMALES
+            function bloquearDecimales(e) {
+                // prohibimos punto y coma
+                if (!switchPeso.checked) {
+                    if (e.key === '.' || e.key === ',') {
+                        e.preventDefault();
+                    }
+                }
+            }
+
+            // Asignamos el bloqueo
+            if(inputStock) inputStock.addEventListener('keydown', bloquearDecimales);
+            if(inputMin) inputMin.addEventListener('keydown', bloquearDecimales);
+            if(inputAgregar) inputAgregar.addEventListener('keydown', bloquearDecimales);
+
+
+            // LÓGICA DE TEXTOS Y FORMATO
+            function formatearEntero(input) {
+                if (input && input.value) {
+                    // Si tiene punto decimal, lo truncamos visualmente
+                    if (input.value.indexOf('.') !== -1 || input.value.indexOf(',') !== -1) {
+                        let valor = parseFloat(input.value);
+                        if (!isNaN(valor)) {
+                            input.value = Math.floor(valor);
+                        }
+                    }
+                }
+            }
+
+            function actualizarTextosPeso() {
+                if (switchPeso.checked) {
+                    // MODO PESO
+                    labelCosto.innerHTML = "Precio Costo <strong>(por Kg)</strong>:";
+                    labelVenta.innerHTML = "Precio Venta <strong>(por Kg)</strong>:";
+                    labelStock.innerHTML = "Stock Actual <strong>(Kilos)</strong>:";
+                    previewUnidad.textContent = "/kg";
+                    
+                    if (inputStock) inputStock.step = "0.001";
+                    if (inputMin) inputMin.step = "0.001";
+                    if (inputAgregar) inputAgregar.step = "0.001";
+
+                } else {
+                    // MODO UNIDAD
+                    labelCosto.innerHTML = "Precio Costo <strong>(Compra)</strong>:";
+                    labelVenta.innerHTML = "Precio Venta <strong>(Público)</strong>:";
+                    labelStock.innerHTML = "Stock Actual <strong>(Unidades)</strong>:";
+                    previewUnidad.textContent = "/u";
+                    
+                    if (inputStock) inputStock.step = "1";
+                    if (inputMin) inputMin.step = "1";
+                    if (inputAgregar) inputAgregar.step = "1";
+
+                    // Limpiar decimales
+                    formatearEntero(inputStock);
+                    formatearEntero(inputMin);
+                    formatearEntero(inputAgregar);
+                }
+            }
+
+            if (switchPeso) {
+                switchPeso.addEventListener('change', actualizarTextosPeso);
+                // Ejecutar al inicio
+                setTimeout(actualizarTextosPeso, 50);
+            }
+
+            // VISTA PREVIA Y EXTRAS
+            const inpNombre = document.getElementById('id_nombre');
+            const inpMarca = document.getElementById('id_marca');
+            const inpPrecio = document.getElementById('id_precio');
+            const inpContenido = document.getElementById('id_contenido_neto');
+            const prevNombre = document.getElementById('preview-nombre');
+            const prevMarca = document.getElementById('preview-marca');
+            const prevPrecio = document.getElementById('preview-precio');
+            const prevContenido = document.getElementById('preview-contenido');
+            function actualizarPreview() {
+                prevNombre.textContent = inpNombre.value || "-";
+                prevMarca.textContent = inpMarca.value || "-";
+                prevPrecio.textContent = inpPrecio.value || "0.0";
+                if (inpContenido.value) prevContenido.textContent = `(${inpContenido.value})`;
+                else prevContenido.textContent = "";
+            }
+            if(inpNombre) inpNombre.addEventListener('input', actualizarPreview);
+            if(inpMarca) inpMarca.addEventListener('input', actualizarPreview);
+            if(inpPrecio) inpPrecio.addEventListener('input', actualizarPreview);
+            if(inpContenido) inpContenido.addEventListener('input', actualizarPreview);
+            function configurarComboNuevo(selectId, divInputId, inputId, textoOpcion) {
+                const select = document.getElementById(selectId);
+                const divInput = document.getElementById(divInputId);
+                const input = document.getElementById(inputId);
+                if (!select || !divInput || !input) return;
+                const opcion = document.createElement('option');
+                opcion.value = 'crear_nuevo_magic';
+                opcion.text = textoOpcion;
+                opcion.style.fontWeight = 'bold';
+                opcion.style.color = 'green';
+                select.add(opcion, 1);
+                if (input.value.trim() !== "") {
+                    divInput.style.display = 'block';
+                    select.value = 'crear_nuevo_magic';
+                    input.required = true;
+                }
+                select.addEventListener('change', function() {
+                    if (this.value === 'crear_nuevo_magic') {
+                        divInput.style.display = 'block';
+                        input.focus();
+                        input.required = true;
+                    } else {
+                        divInput.style.display = 'none';
+                        input.value = '';
+                        input.required = false;
+                    }
+                });
+            }
+
+            configurarComboNuevo('select_tipo', 'div_nuevo_tipo', 'input_nuevo_tipo', '➕ Nuevo Tipo');
+            configurarComboNuevo('select_categoria', 'div_nueva_categoria', 'input_nueva_categoria', '➕ Nueva Categoría');
+            configurarComboNuevo('select_subcategoria', 'div_nueva_subcategoria', 'input_nueva_subcategoria', '➕ Nueva Subcategoría');
+
+            // ESCÁNER
+            const inputCodigo = document.getElementById('id_codigo_barras');
+            const primerSelect = document.getElementById('select_tipo'); 
+            if (inputCodigo) {
+                inputCodigo.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); 
+                        primerSelect.focus(); 
+                    }
+                });
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

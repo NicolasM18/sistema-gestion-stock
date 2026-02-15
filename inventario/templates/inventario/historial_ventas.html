@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de Ventas por Caja</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'inventario/style.css' %}">
+    
+    <style>
+        .cursor-pointer { cursor: pointer; }
+        /* Aumentamos un poco el tamaño general de las filas de la tabla */
+        .tabla-grande td, .tabla-grande th {
+            padding: 12px 15px; /* Más espacio */
+            font-size: 1.1rem;  /* Letra más grande (aprox 17px) */
+        }
+    </style>
+</head>
+<body class="main-hv container-fluid px-4 mt-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-dark">💰 Historial de Cajas y Ventas</h1>
+        <a href="{% url 'home' %}" class="btn btn-outline-dark">← Volver al Stock</a>
+    </div>
+
+    <div class="card shadow mb-4 border-0">
+        <div class="card-body d-flex justify-content-between align-items-center bg-dark text-white rounded">
+            <div>
+                <h5 class="mb-0">Estado Actual:</h5>
+                {% if caja_abierta %}
+                    <div class="mt-2">
+                        <span class="badge bg-success fs-5">🔓 CAJA ABIERTA #{{ caja_abierta.id }}</span>
+                        <div class="text-white-50 small mt-1">
+                            Abierta el: {{ caja_abierta.fecha_apertura|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="mt-2">
+                        <span class="badge bg-danger fs-5">🔒 CAJA CERRADA</span>
+                    </div>
+                {% endif %}
+            </div>
+            <div>
+                {% if caja_abierta %}
+                    <button type="button" class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#modalCerrarCaja">
+                        ⛔ Cerrar Caja
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalAbrirCaja">
+                        ✅ Abrir Caja
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body bg-light">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="fw-bold text-muted small">Desde (Fecha y Hora):</label>
+                    <input type="datetime-local" name="fecha_inicio" class="form-control" value="{{ fecha_inicio }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="fw-bold text-muted small">Hasta (Fecha y Hora):</label>
+                    <input type="datetime-local" name="fecha_fin" class="form-control" value="{{ fecha_fin }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">🔍 Filtrar Cajas</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'historial' %}" class="btn btn-outline-secondary w-100">Limpiar</a>
+                </div>
+            </form>
+            
+            {% if fecha_inicio or fecha_fin %}
+            <hr>
+            <div class="alert alert-info mb-0 text-center fw-bold">
+                💰 VENTA TOTAL EN ESTE PERIODO: <span class="text-success fs-4">${{ total_general }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="shadow tabla-scroll-hv" style="max-height: 60vh">
+        
+        {% if not cajas and not ventas_sueltas %}
+            <div class="text-center py-5">
+                <div style="font-size: 4rem; opacity: 0.5;">📭</div>
+                <h3 class="text-muted mt-3 fw-bold">No hay movimientos registrados</h3>
+                <p class="text-secondary">
+                    {% if fecha_inicio or fecha_fin %}
+                        No se encontraron cajas ni ventas en las fechas seleccionadas.
+                        <br><a href="{% url 'historial' %}" class="btn btn-link">Borrar Filtros</a>
+                    {% else %}
+                        Aún no has abierto ninguna caja ni realizado ventas.
+                        <br>¡Presiona <strong>"Abrir Caja"</strong> para comenzar!
+                    {% endif %}
+                </p>
+            </div>
+        {% else %}
+
+            {% for caja in cajas %}
+            <div class="card shadow-sm mb-3 border-top-0 border-end-0 border-bottom border-start border-5 {% if caja.fecha_cierre %}border-secondary{% else %}border-success{% endif %}">
+                
+                <div class="card-header bg-white py-3 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#cajaContent{{ caja.id }}" aria-expanded="false">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <h5 class="mb-0 fw-bold text-dark d-flex align-items-center">
+                                <span class="me-2">▼</span> 🗳️ Caja #{{ caja.id }}
+                                {% if not caja.fecha_cierre %}
+                                    <span class="badge bg-success ms-2" style="font-size: 0.6em;">ACTUAL</span>
+                                {% endif %}
+                            </h5>
+                            <div class="text-muted small mt-1 ms-4">
+                                {{ caja.fecha_apertura|date:"d/m/Y H:i" }}
+                                {% if caja.fecha_cierre %} a {{ caja.fecha_cierre|date:"H:i" }} {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-5 text-end">
+                            {% if caja.t_efectivo > 0 %} <span class="badge bg-success border border-success bg-opacity-25 text-success mb-1">💵 ${{ caja.t_efectivo|floatformat:0 }}</span> {% endif %}
+                            {% if caja.t_tarjeta > 0 %} <span class="badge bg-info border border-info bg-opacity-25 text-primary mb-1">💳 ${{ caja.t_tarjeta|floatformat:0 }}</span> {% endif %}
+                            {% if caja.t_transf > 0 %} <span class="badge bg-warning border border-warning bg-opacity-25 text-dark mb-1">🏦 ${{ caja.t_transf|floatformat:0 }}</span> {% endif %}
+                            {% if caja.t_cta > 0 %} <span class="badge bg-secondary border border-secondary bg-opacity-25 text-dark mb-1">📋 ${{ caja.t_cta|floatformat:0 }}</span> {% endif %}
+                        </div>
+
+                        <div class="col-md-3 text-end border-start">
+                            <h4 class="mb-0 text-success fw-bold">${{ caja.total_calculado|floatformat:2 }}</h4>
+                            <small class="text-muted" style="font-size: 0.75rem;">Total Recaudado</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cajaContent{{ caja.id }}" class="collapse {% if not caja.fecha_cierre %}show{% endif %}">
+                    <div class="card-body p-0 border-top">
+                        
+                        <div class="d-flex justify-content-start gap-2 p-2 bg-light border-bottom">
+                            <span class="align-self-center text-muted small fw-bold me-2">Filtrar por:</span>
+                            
+                            <button class="btn btn-sm btn-outline-dark active" onclick="filtrarVentas(this, 'all', 'caja{{ caja.id }}')">
+                                Todos
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="filtrarVentas(this, 'efectivo', 'caja{{ caja.id }}')">
+                                💵 Efectivo
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="filtrarVentas(this, 'tarjeta', 'caja{{ caja.id }}')">
+                                💳 Tarjeta
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning text-dark" onclick="filtrarVentas(this, 'transferencia', 'caja{{ caja.id }}')">
+                                🏦 Transfer
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="filtrarVentas(this, 'cta_corriente', 'caja{{ caja.id }}')">
+                                📋 Cta. Cte.
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 tabla-grande" id="tabla-caja{{ caja.id }}">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Hora</th>
+                                        <th>Productos</th>
+                                        <th>Pago</th>
+                                        <th class="text-end pe-4">Total Venta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for venta in caja.ventas_caja.all %}
+                                    <tr class="fila-venta" data-metodo="{{ venta.metodo_pago }}">
+                                        <td class="ps-4 text-muted fw-bold">{{ venta.fecha|date:"H:i" }}</td>
+                                        <td>
+                                            <ul class="list-unstyled mb-0">
+                                                {% for det in venta.detalles.all %}
+                                                <li class="mb-1">
+                                                    <span style="font-size: 1.05rem;">
+                                                        <strong>{{ det.cantidad|floatformat:-3 }}</strong> x {{ det.producto.nombre }}
+                                                    </span>
+                                                    <span class="text-muted ms-1" style="font-size: 0.9rem;">(${{ det.precio_sub_total }})</span>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border fs-6">{{ venta.get_metodo_pago_display }}</span>
+                                        </td>
+                                        <td class="text-end pe-4 fw-bold text-success fs-5">
+                                            ${{ venta.total }}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-3 text-muted">Sin ventas registradas en esta caja.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if ventas_sueltas %}
+            <div class="card shadow-sm mb-4 border-start border-5 border-warning">
+                <div class="card-header bg-warning bg-opacity-10 py-3 cursor-pointer" data-bs-toggle="collapse" data-bs-target="#collapseAntiguas">
+                    <div class="row align-items-center">
+                        <div class="col-md-4"><h5 class="mb-0 fw-bold text-dark"><span class="me-2">▼</span> ⚠️ Ventas (Sin Caja)</h5></div>
+                        <div class="col-md-5 text-end">
+                            {% if resumen_sueltas.efectivo > 0 %} <span class="badge bg-success">💵 ${{ resumen_sueltas.efectivo|floatformat:0 }}</span> {% endif %}
+                            {% if resumen_sueltas.tarjeta > 0 %} <span class="badge bg-info text-dark">💳 ${{ resumen_sueltas.tarjeta|floatformat:0 }}</span> {% endif %}
+                        </div>
+                        <div class="col-md-3 text-end"><h5 class="mb-0 fw-bold">${{ resumen_sueltas.total|floatformat:2 }}</h5></div>
+                    </div>
+                </div>
+                <div id="collapseAntiguas" class="collapse">
+                    <div class="card-body p-0 border-top">
+                        <table class="table table-hover mb-0 tabla-grande">
+                            <tbody>
+                                {% for venta in ventas_sueltas %}
+                                <tr>
+                                    <td class="ps-4">{{ venta.fecha|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <ul class="list-unstyled mb-0">
+                                            {% for det in venta.detalles.all %}
+                                            <li><strong>{{ det.cantidad }}</strong> x {{ det.producto.nombre }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border fs-6">{{ venta.get_metodo_pago_display }}</span></td>
+                                    <td class="text-end pe-4 fw-bold fs-5">${{ venta.total }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        {% endif %} </div>
+
+    {% if messages %}
+        <div class="position-fixed bottom-0 end-0 p-4" style="z-index: 1050">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg" role="alert">
+                <strong>{{ message }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="modal fade" id="modalCerrarCaja" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">⛔ Cerrar Caja</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3" style="font-size: 3rem;">🔐</div>
+                    <h5 class="mb-2">¿Estás seguro de cerrar la caja actual?</h5>
+                    <p class="text-muted small">
+                        Al cerrar la caja, se calculará el total de ventas de esta sesión y dejará de estar activa.
+                    </p>
+                </div>
+                
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    
+                    <a href="{% url 'cerrar_caja' %}" class="btn btn-danger px-4">
+                        ✅ Sí, cerrar caja
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="modalAbrirCaja" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">🔓 Abrir Nueva Caja</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3" style="font-size: 3rem;">📂</div>
+                    <h5 class="mb-2">¿Deseas iniciar un nuevo turno de caja?</h5>
+                    <p class="text-muted small">
+                        Se creará un nuevo registro de caja abierta y todas las ventas nuevas se asignarán a ella.
+                    </p>
+                </div>
+                
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    
+                    <a href="{% url 'abrir_caja' %}" class="btn btn-success px-4">
+                        ✅ Sí, abrir caja
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filtrarVentas(boton, metodo, cajaId) {
+            let contenedorBotones = boton.parentElement;
+            let botones = contenedorBotones.querySelectorAll('button');
+            botones.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            boton.classList.add('active');
+            let tabla = document.getElementById('tabla-' + cajaId);
+            if (!tabla) return;
+
+            let filas = tabla.querySelectorAll('tbody tr.fila-venta');
+
+            filas.forEach(fila => {
+                let metodoFila = fila.getAttribute('data-metodo');
+
+                if (metodo === 'all') {
+                    fila.style.display = ''; 
+                } else {
+                    if (metodoFila === metodo) {
+                        fila.style.display = '';
+                    } else {
+                        fila.style.display = 'none';
+                    }
+                }
+            });
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

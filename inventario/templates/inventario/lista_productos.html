@@ -1,0 +1,714 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Control de Stock</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'inventario/style.css' %}">
+    
+    <style>
+        .alert-custom {
+            overflow: hidden; position: relative; min-width: 320px; max-width: 450px;
+            border-radius: 15px !important; border: none !important;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+            display: flex; align-items: center; padding: 1rem 1.5rem;
+        }
+        .alert-custom .btn-close {
+            position: absolute; top: 50%; right: 15px; transform: translateY(-50%); padding: 0.5rem;
+        }
+        .progress-bar-alert {
+            position: absolute; bottom: 0; left: 0; height: 4px;
+            background-color: rgba(70, 159, 255, 0.7); width: 100%;
+            animation: progress-animation 5s linear forwards; 
+        }
+        @keyframes progress-animation { 0% { width: 100%; } 100% { width: 0%; } }
+    </style>
+</head>
+<body class="{% if modo == 'venta' %}main-v container-fluid px-4 mt-5{% else %}main-c container-fluid px-4 mt-5{% endif %}">
+    
+    <div class="bt-cont mb-2 align-items-center">
+        <div class="cont-bus col-md-5 mb-5">
+            <form class="form-bus d-flex" method="get">
+                <input class="form-control me-2 mi-buscador" type="search" name="buscar" placeholder="Buscar por nombre, marca o código... (F2)" value="{{ request.GET.buscar }}">
+                <button class="btn-buscar btn btn-outline-primary" type="submit">🔍 Buscar</button>
+                {% if request.GET.buscar %}
+                    <a href="{% url 'home' %}" class="btn btn-outline-secondary ms-2">❌</a>
+                {% endif %}
+                <input type="hidden" name="modo" value="{{ modo }}">
+            </form>
+        </div>
+        <div class="cont-bot col-md-7 text-end">
+            <a href="{% url 'agregar' %}" class="btn btn-success btn-nuevo">+ Nuevo Producto</a>
+      
+            {% if modo == 'venta' %}
+                <a href="{% url 'historial' %}" class="btn btn-info text-white me-2 btn-venta">
+                    📋 Historial Ventas
+                </a>
+                
+                <div class="cont-cambio mb-3 text-center d-inline-block ms-2">
+                    <a href="?modo=compra" class="btn-cambiar-compra">🔄 Ir a COMPRAS (F6)</a>
+                </div>
+
+            {% else %}
+                <a href="{% url 'historial_ingresos' %}" class="btn btn-warning text-white me-2 btn-compra">
+                    🚛 Historial Compras
+                </a>
+
+                <div class="cont-cambio mb-3 text-center d-inline-block ms-2">
+                    <a href="?modo=venta" class="btn-cambiar-venta">🔄 Ir a VENTAS (F6)</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if modo == 'venta' %}
+        <h1 class="mb-5 text-dark">📦 Listado de Stock - Ventas</h1>
+    {% else %}
+        <h1 class="mb-5 text-dark">📦 Listado de Stock - Compras</h1>
+    {% endif %}
+
+    {% if modo == 'venta' %}
+        <form action="{% url 'agregar_masivo' %}" method="POST">
+    {% else %}
+        <form action="{% url 'ingreso_masivo' %}" method="POST">
+    {% endif %}
+        {% csrf_token %}
+        <input type="hidden" name="busqueda_actual" value="{{ request.GET.buscar }}">
+
+        <div class="card shadow mb-3">
+            <div class="card-body p-0">
+                <div class="tabla-scroll-lp">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="{% if modo == 'venta' %}table-title-v{% else %}table-title-c{% endif %}">
+                            <tr>
+                                <th>Categoría</th>
+                                <th>Marca</th>
+                                <th>Producto</th>
+                                
+                                <th>
+                                    {% if modo == 'venta' %}Precio Venta{% else %}Costo Unit.{% endif %}
+                                </th>
+                                
+                                <th>Stock</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                                <th>
+                                    {% if modo == 'venta' %}
+                                        Venta (Salida)
+                                    {% else %}
+                                        <div class="justify-content-between">
+                                            <span>Ingreso | Costo - Rent - Cant</span>
+                                        </div>
+                                    {% endif %}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in productos %}
+                            <tr>
+                                <td>
+                                    <span class="text-muted">{{ p.tipo_producto|default:"-" }}</span>
+                                    <span class="text-muted"> | </span>
+                                    <span class="text-muted"> {{ p.categoria|default:"-" }} </span>
+                                    <span class="text-muted"> | </span>
+                                    <span class="text-muted">{{ p.subcategoria|default:"-" }}</span>
+                                </td>
+                                <td class="text-primary"><strong>{{ p.marca|default:"-" }}</strong></td>
+                                <td><strong>{{ p.nombre }}</strong>
+                                    {% if p.contenido_neto %}
+                                        <span class="text-muted small">({{ p.contenido_neto }})</span>
+                                    {% endif %}
+                                    {% if p.es_por_peso %}
+                                        <span class="badge bg-secondary text-light" style="font-size: 0.7em;">⚖️ KG</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <td>
+                                    {% if modo == 'venta' %}
+                                        <strong class="text-success">${{ p.precio }}</strong>
+                                    {% else %}
+                                        <strong class="text-primary">${{ p.precio_costo }}</strong>
+                                    {% endif %}
+                                    
+                                    <small class="text-muted">/{% if p.es_por_peso %}kg{% else %}u{% endif %}</small>
+                                </td>
+
+                                <td class="{% if p.stock_actual < p.stock_minimo %}text-danger fw-bold{% endif %}">
+                                    {{ p.stock_actual|floatformat:-3 }}
+                                    <small class="text-muted" style="font-size: 0.85em;">
+                                        {% if p.es_por_peso %} Kg {% else %} Un {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if p.stock_actual < p.stock_minimo %}
+                                        <span class="badge bg-danger">¡Reponer!</span>
+                                    {% else %}
+                                        <span class="badge bg-success">OK</span>
+                                    {% endif %}
+                                </td>
+                                <td class="botones-accion">
+                                    <a href="{% url 'editar' p.id %}" class="btn btn-sm btn-warning">✏️</a>
+                                </td>
+                                <td>
+                                    {% if modo == 'compra' %}
+                                        <div class="d-flex gap-1 align-items-center">
+                                            
+                                            <div class="input-group input-group-sm" style="width: 90px;">
+                                                <span class="input-group-text px-1 text-muted">$</span>
+                                                <input type="number" 
+                                                    name="costo_ingreso_{{ p.id }}" 
+                                                    class="form-control px-1" 
+                                                    placeholder="Costo" 
+                                                    step="0.01" 
+                                                    value="{{ p.precio_costo|stringformat:'.2f' }}">
+                                            </div>
+
+                                            <div class="input-group input-group-sm" style="width: 75px;" title="Multiplicador para Precio Venta">
+                                                <span class="input-group-text px-1 text-warning fw-bold">x</span>
+                                                <input type="number" 
+                                                    name="markup_ingreso_{{ p.id }}" 
+                                                    class="form-control px-1 input-markup-global" 
+                                                    placeholder="1.?" 
+                                                    step="0.01"
+                                                    value="1"> </div>
+
+                                            <input type="number" 
+                                                name="cant_ingreso_{{ p.id }}" 
+                                                class="form-control form-control-sm" 
+                                                placeholder="Cant" 
+                                                
+                                                {# CONDICIONAL: Si es por peso, deja decimales. Si no, solo enteros #}
+                                                min="{% if p.es_por_peso %}0.001{% else %}1{% endif %}" 
+                                                step="{% if p.es_por_peso %}0.001{% else %}1{% endif %}" 
+                                                
+                                                style="width: 65px;">
+                                        </div>
+                                    {% else %}
+                                        <input type="number" 
+                                            name="cant_{{ p.id }}" 
+                                            class="form-control form-control-sm" 
+                                            min="{% if p.es_por_peso %}0.001{% else %}1{% endif %}" 
+                                            max="{{ p.stock_actual }}" 
+                                            step="{% if p.es_por_peso %}0.001{% else %}1{% endif %}" 
+                                            style="width: 100px;" 
+                                            placeholder="Cant">
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-2">
+                                    {% if request.GET.buscar %}
+                                        ❌ No se encontraron productos con esa búsqueda.
+                                    {% else %}
+                                        🔍 <strong>Utiliza el buscador de arriba</strong> para encontrar productos.
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="cont-foot p-3 text-center sticky-bottom">
+            <div class="container d-flex justify-content-between align-items-center">
+                
+                {% if modo == 'compra' %}
+                    <div class="d-flex align-items-center bg-light border rounded px-2 py-1">
+                        <span class="small fw-bold text-muted me-2">⚡ Rentabilidad Global:</span>
+                        <div class="input-group input-group-sm" style="width: 140px;">
+                            <span class="input-group-text">x</span>
+                            <input type="number" id="global_markup_input" class="form-control" placeholder="1.5" step="0.1" value="1.5">
+                            <button type="button" class="btn btn-secondary" onclick="aplicarMarkupGlobal()">Aplicar</button>
+                        </div>
+                    </div>
+                {% else %}
+                    <span class="text-dark small">👇 Agrega productos para vender.</span>
+                {% endif %}
+
+                <button type="submit" 
+                        id="{% if modo == 'venta' %}btn-agregar-venta{% else %}btn-agregar-compra{% endif %}"  class="btn {% if modo == 'venta' %}btn-selec-v{% else %}btn-warning fw-bold{% endif %} text-light shadow-sm">
+                    
+                    {% if modo == 'venta' %}
+                        🛒 Agregar a Venta (F3)
+                    {% else %}
+                        🚛 Agregar a Ingreso (F3)
+                    {% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+
+    {% if modo == 'venta' %}
+        <div class="card shadow mt-4 mb-5 border-secondary">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">🛒 Carrito de Venta</h4>
+            </div>
+            <div class="card-body p-0">
+                {% if carrito %}
+                    <form action="{% url 'confirmar_compra' %}" method="POST" id="form-venta">
+                        {% csrf_token %}
+                        <div class="row g-0">
+                            <div class="col-md-8 border-end">
+                                <div class="tabla-scroll-cv" style="max-height: 280px; overflow-y: auto;">
+                                    <table class="table table-hover table-striped mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Marca</th>
+                                                <th>Producto</th>
+                                                <th>Precio</th>
+                                                <th>Cant.</th>
+                                                <th>Subtotal</th>
+                                                <th>Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for key, item in carrito.items %}
+                                            <tr>
+                                                <td class="text-primary"><strong>{{ item.marca }}</strong></td>
+                                                <td>
+                                                    <strong>{{ item.nombre }}</strong>
+                                                    {% if item.contenido_neto and not item.es_por_peso %}
+                                                        <span class="badge bg-light text-dark border">({{ item.contenido_neto }})</span>
+                                                    {% endif %}
+                                                    <br>
+                                                    <small class="text-muted small">
+                                                        <span class="text-muted small">{{ item.tipo }}</span> 
+                                                        | {{ item.categoria }} | 
+                                                        <span class="text-muted small">{{ item.subcategoria }}</span>
+                                                    </small>
+                                                    {% if item.es_por_peso %}
+                                                        <span class="badge bg-light text-dark border">⚖️ x Peso</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-success"><strong>${{ item.precio }}</strong></td>
+                                                <td>{{ item.cantidad|floatformat:-3 }} {% if item.es_por_peso %}Kg{% else %}Un{% endif %}</td>
+                                                <td class="fw-bold">${{ item.subtotal|floatformat:2 }}</td>
+                                                <td>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-danger border-0" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#modalEliminarItem"
+                                                            
+                                                            {# AQUÍ ESTÁ EL CAMBIO: Agregamos el parámetro buscar al final #}
+                                                            data-url="{% url 'eliminar_item' item.producto_id %}?buscar={{ request.GET.buscar|default:'' }}"
+                                                            
+                                                            onclick="setEliminarUrl(this.dataset.url)">
+                                                        ❌
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 bg-light p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <h5 class="mb-2 text-success border-bottom pb-1">💳 Método de Pago (F4)</h5>
+                                    <div class="form-check mb-1"> <input class="form-check-input" type="radio" name="metodo_pago" id="pago_efectivo" value="efectivo" checked>
+                                        <label class="form-check-label fw-bold" for="pago_efectivo">💵 Efectivo</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="radio" name="metodo_pago" id="pago_tarjeta" value="tarjeta">
+                                        <label class="form-check-label" for="pago_tarjeta">💳 Tarjeta</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="radio" name="metodo_pago" id="pago_transferencia" value="transferencia">
+                                        <label class="form-check-label" for="pago_transferencia">🏦 Transferencia</label>
+                                    </div>
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="radio" name="metodo_pago" id="pago_cta" value="cta_corriente">
+                                        <label class="form-check-label" for="pago_cta">📋 Cta. Corriente</label>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-center">
+                                    <h4 class="text-muted mb-0 fs-6">Total a Pagar:</h4> <h2 class="fw-bold text-success fs-1">${{ total_carrito }}</h2>
+                                </div>
+                                <div class="d-grid gap-2 mt-3">
+                                    <button id="btn-accion-principal" type="button" class="btn btn-success btn-lg shadow-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmarVenta">
+                                        ✅ CONFIRMAR VENTA (F1)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmarCancelacion">
+                                        🗑️ Cancelar Todo (F9)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div style="font-size: 4rem;">🛒</div>
+                        <h3 class="text-muted mt-3">El carrito está vacío</h3>
+                        <p class="text-secondary">
+                            Selecciona productos de la lista superior y presiona "Agregar a Lista de Venta".
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    
+        {% elif modo == 'compra' %}
+            <div class="card shadow mt-4 mb-5 border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">🚛 Lista de Ingreso (Compras)</h4>
+                </div>
+                
+                <div class="card-body p-0">
+                    
+                    {% if lista_compras %}
+                        <form action="{% url 'confirmar_ingresos' %}" method="POST" id="form-compra">
+                            {% csrf_token %}
+                            <div class="row g-0">
+                                <div class="col-md-8 border-end">
+        <div class="tabla-scroll-cv" style="max-height: 280px; overflow-y: auto;">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Producto</th>
+                        <th>Costo</th>
+                        <th>Rentab.</th> <th>Nuevo Precio</th> <th>Cant.</th>
+                        <th>Subtotal</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, item in lista_compras.items %}
+                    <tr>
+                        <td><strong>{{ item.nombre }}</strong></td>
+                        
+                        <td class="text-muted">${{ item.costo }}</td>
+                        
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border">x{{ item.markup }}</span>
+                        </td>
+                        
+                        <td>
+                            <strong class="text-success">${{ item.nuevo_precio|floatformat:0 }}</strong>
+                        </td>
+
+                        <td>{{ item.cantidad }}</td>
+                        <td class="fw-bold">${{ item.subtotal|floatformat:2 }}</td>
+                        <td>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-danger border-0" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalEliminarItem"
+                                    
+                                    {# AQUÍ ESTÁ EL CAMBIO #}
+                                    data-url="{% url 'eliminar_item_ingreso' item.producto_id %}?buscar={{ request.GET.buscar|default:'' }}"
+                                    
+                                    onclick="setEliminarUrl(this.dataset.url)">
+                                ❌
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+                            
+                            <div class="col-md-4 bg-light p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <h5 class="mb-2 text-warning text-dark border-bottom border-warning pb-1">🏭 Proveedor</h5>
+                                    
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted">Seleccionar Proveedor:</label>
+                                        <select name="proveedor_id" id="select_proveedor" class="form-select">
+                                            <option value="">-- Consumidor Final / Sin Prov --</option>
+                                            {% for prov in proveedores %}
+                                                <option value="{{ prov.id }}">{{ prov.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div id="div_nuevo_proveedor" style="display: none;" class="mt-2 p-2 bg-white border rounded">
+                                        <label class="form-label small fw-bold text-success">➕ Nuevo Proveedor:</label>
+                                        <input type="text" name="nuevo_proveedor_nombre" id="input_nuevo_proveedor" class="form-control form-control-sm" placeholder="Nombre de la empresa...">
+                                    </div>
+                                </div>
+
+                                <div class="mt-2 text-center">
+                                    <h4 class="text-muted mb-0 fs-6">Total Costo:</h4> 
+                                    <h2 class="fw-bold text-primary fs-1">${{ total_compras }}</h2>
+                                </div>
+
+                                <div class="d-grid gap-2 mt-3">
+                                    <button id="btn-accion-principal" type="button" class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmarCompra">
+                                        ✅ INGRESAR STOCK (F1)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmarCancelacionCompra">
+                                        🗑️ Limpiar Lista (F9)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                {% else %}
+                    <div class="text-center py-5"><div style="font-size: 3rem;">🚛</div><h4 class="text-muted">Lista de Ingreso Vacía</h4></div>
+                {% endif %}
+
+            </div>
+        </div>
+    {% endif %}
+
+    {% if messages %}
+        <div class="position-fixed bottom-0 end-0 p-4" style="z-index: 1050">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-custom alert-dismissible fade show fs-5" role="alert">
+                <div class="me-4"> {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}⛔{% else %}ℹ️{% endif %}
+                    <strong>{{ message }}</strong>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="progress-bar-alert"></div>
+            </div>
+            {% endfor %}
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const audio = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU");
+                audio.play().catch(e => console.log("Audio bloqueado"));
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    setTimeout(function() { new bootstrap.Alert(alert).close(); }, 5000);
+                });
+            });
+        </script>
+    {% endif %}
+
+    <div class="modal fade" id="modalConfirmarCancelacion" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white"><h5 class="modal-title">⚠️ Cancelar Venta</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body text-center"><p class="fs-5 fw-bold">¿Borrar carrito?</p><small>Stock restaurado.</small></div>
+                <div class="modal-footer justify-content-center"><button class="btn btn-secondary" data-bs-dismiss="modal">Volver</button><a href="{% url 'limpiar_carrito' %}" class="btn btn-danger">Sí, Cancelar</a></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalConfirmarCancelacionCompra" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white"><h5 class="modal-title">⚠️ Limpiar Ingreso</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body text-center"><p class="fs-5 fw-bold">¿Borrar lista de compras?</p><small>No se guardará nada.</small></div>
+                <div class="modal-footer justify-content-center"><button class="btn btn-secondary" data-bs-dismiss="modal">Volver</button><a href="{% url 'limpiar_ingresos' %}" class="btn btn-danger">Sí, Borrar</a></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalConfirmarVenta" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white"><h5 class="modal-title fw-bold">💰 Finalizar Venta</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body text-center p-4"><h4 class="mb-3">¿Confirmar la venta?</h4><div class="alert alert-success d-inline-block px-4 py-2"><span class="fs-5">Total: <strong>${{ total_carrito }}</strong></span></div></div>
+                <div class="modal-footer justify-content-center"><button class="btn btn-secondary" data-bs-dismiss="modal">Volver</button><button type="submit" form="form-venta" class="btn btn-success px-4 btn-lg">✅ Sí, Cobrar</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalConfirmarCompra" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark"><h5 class="modal-title fw-bold">🚛 Confirmar Ingreso</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3" style="font-size: 3rem;">📦</div>
+                    <h4 class="mb-3">¿Ingresar Mercadería?</h4>
+                    <p class="text-muted">Se sumará al stock y se actualizarán los costos.</p>
+                    <div class="alert alert-warning d-inline-block px-4 py-2"><span class="fs-5 text-dark">Costo Total: <strong>${{ total_compras }}</strong></span></div>
+                </div>
+                <div class="modal-footer justify-content-center"><button class="btn btn-secondary" data-bs-dismiss="modal">Volver</button><button type="submit" form="form-compra" class="btn btn-warning fw-bold px-4 btn-lg">✅ Sí, Ingresar</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEliminarItem" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark"><h5 class="modal-title fw-bold">⚠️ Quitar Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body text-center p-4"><div class="mb-3" style="font-size: 3rem;">📦</div><h5>¿Quitar de la lista?</h5></div>
+                <div class="modal-footer justify-content-center"><button class="btn btn-secondary" data-bs-dismiss="modal">No</button><a id="btnConfirmarEliminarItem" href="#" class="btn btn-danger">Sí, quitar</a></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setEliminarUrl(url) {
+            const btn = document.getElementById('btnConfirmarEliminarItem');
+            if (btn) btn.href = url;
+        }
+
+        function aplicarMarkupGlobal() {
+            const inputGlobal = document.getElementById('global_markup_input');
+            if (!inputGlobal) return;
+            
+            const valorGlobal = inputGlobal.value;
+            if (!valorGlobal) {
+                alert("Ingresa un número (ej: 1.5)");
+                return;
+            }
+            document.querySelectorAll('.input-markup-global').forEach(input => {
+                input.value = valorGlobal;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectProv = document.getElementById('select_proveedor');
+            const divNuevoProv = document.getElementById('div_nuevo_proveedor');
+            const inputNuevoProv = document.getElementById('input_nuevo_proveedor');
+
+            if (selectProv) {
+                const opcion = document.createElement('option');
+                opcion.value = 'crear_nuevo_magic';
+                opcion.text = '➕ Nuevo Proveedor...';
+                opcion.style.fontWeight = 'bold';
+                opcion.style.color = 'green';
+                selectProv.add(opcion, 1);
+
+                selectProv.addEventListener('change', function() {
+                    if (this.value === 'crear_nuevo_magic') {
+                        divNuevoProv.style.display = 'block';
+                        inputNuevoProv.focus();
+                        inputNuevoProv.required = true;
+                    } else {
+                        divNuevoProv.style.display = 'none';
+                        inputNuevoProv.value = '';
+                        inputNuevoProv.required = false;
+                    }
+                });
+            }
+            const tablaCuerpo = document.querySelector('table tbody');
+            const filas = tablaCuerpo ? tablaCuerpo.querySelectorAll('tr') : [];
+            const buscador = document.querySelector('input[name="buscar"]');
+
+            if (filas.length === 1) {
+                const input = filas[0].querySelector('input[name^="cant_"]');
+                if (input) { input.focus(); input.select(); }
+            } else {
+                if (buscador) {
+                    buscador.focus();
+                    const val = buscador.value;
+                    buscador.value = '';
+                    buscador.value = val;
+                }
+            }
+        });
+        document.addEventListener('keydown', function(e) {
+            
+            if (e.key === 'ArrowDown') {
+                if (e.target.matches('input[name^="cant_"]')) {
+                    e.preventDefault();
+                    const inputs = Array.from(document.querySelectorAll('input[type="number"][name^="cant_"]'));
+                    const index = inputs.indexOf(e.target);
+                    const next = inputs[index + 1];
+                    if (next) { next.focus(); next.select(); }
+                }
+                else {
+                    e.preventDefault();
+                    const inputs = document.querySelectorAll('input[type="number"][name^="cant_"]');
+                    if (inputs.length > 0) { 
+                        inputs[0].focus(); 
+                        inputs[0].select(); 
+                    }
+                }
+            }
+
+            if (e.key === 'ArrowUp') {
+                if (e.target.matches('input[name^="cant_"]')) {
+                    e.preventDefault();
+                    const inputs = Array.from(document.querySelectorAll('input[type="number"][name^="cant_"]'));
+                    const index = inputs.indexOf(e.target);
+                    const prev = inputs[index - 1];
+                    if (prev) { 
+                        prev.focus(); prev.select(); 
+                    } else {
+                        const buscador = document.querySelector('input[name="buscar"]');
+                        if (buscador) { buscador.focus(); buscador.select(); }
+                    }
+                }
+            }
+
+            if (e.key === 'Enter' && e.target.matches('input[name^="cant_"]')) {
+                e.preventDefault();
+                triggerAgregarCarrito();
+            }
+
+            if (e.key === 'F1') {
+                e.preventDefault();
+                const btn = document.getElementById('btn-accion-principal');
+                if (btn) btn.click();
+            }
+
+            if (e.key === 'F2') {
+                e.preventDefault();
+                const buscador = document.querySelector('input[name="buscar"]');
+                if (buscador) { buscador.focus(); buscador.select(); }
+            }
+
+            if (e.key === 'F3') {
+                e.preventDefault();
+                triggerAgregarCarrito();
+            }
+
+            if (e.key === 'F4') {
+                e.preventDefault();
+                const radios = Array.from(document.querySelectorAll('input[name="metodo_pago"]'));
+                if (radios.length > 0) {
+                    let idx = radios.findIndex(r => r.checked);
+                    let nextIdx = (idx === -1 || idx === radios.length - 1) ? 0 : idx + 1;
+                    radios[nextIdx].checked = true;
+                    radios[nextIdx].focus();
+                }
+            }
+
+            if (e.key === 'F6') {
+                e.preventDefault();
+                const btnVenta = document.querySelector('.btn-cambiar-venta');
+                const btnCompra = document.querySelector('.btn-cambiar-compra');
+                if (btnVenta) window.location.href = btnVenta.href;
+                else if (btnCompra) window.location.href = btnCompra.href;
+            }
+
+            if (e.key === 'F9') {
+                e.preventDefault();
+                const m1 = document.getElementById('modalConfirmarCancelacion');
+                const m2 = document.getElementById('modalConfirmarCancelacionCompra');
+                if (m1) new bootstrap.Modal(m1).show();
+                else if (m2) new bootstrap.Modal(m2).show();
+            }
+        });
+
+        function triggerAgregarCarrito() {
+            const btnV = document.getElementById('btn-agregar-venta');
+            const btnC = document.getElementById('btn-agregar-compra');
+            if (btnV) btnV.click();
+            if (btnC) btnC.click();
+        }
+
+        const idsModales = [
+            { id: 'modalConfirmarVenta', btn: 'button[type="submit"]' },
+            { id: 'modalConfirmarCompra', btn: 'button[type="submit"]' },
+            { id: 'modalConfirmarCancelacion', btn: '.btn-danger' },
+            { id: 'modalConfirmarCancelacionCompra', btn: '.btn-danger' },
+            { id: 'modalEliminarItem', btn: '#btnConfirmarEliminarItem' }
+        ];
+
+        idsModales.forEach(item => {
+            const modalEl = document.getElementById(item.id);
+            if (modalEl) {
+                modalEl.addEventListener('shown.bs.modal', () => {
+                    const boton = modalEl.querySelector(item.btn);
+                    if (boton) boton.focus();
+                });
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
